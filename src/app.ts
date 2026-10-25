@@ -1,16 +1,37 @@
 import express from "express";
 import cors from "cors";
+import { prisma } from "./lib/prisma.js";
+import { mainRoutes } from "./routes/main.routes.js";
 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+app.use("/", mainRoutes);
 
 app.get("/health", (_req, res) => {
+  res.status(200).json({
+      status: "ok",
+  });
+});
+
+app.get("/health/db", async (_req,res) =>{
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+
     res.status(200).json({
-        status: "ok",
+      status: "ok",
+      database: "connected",
     });
+  } catch(error) {
+    console.error("Erro ao conectar ao banco:", error);
+
+    res.status(500).json({
+      status: "error",
+      database: "disconnect",
+    })
+  }
 });
 
 app.use((_req, res) => {

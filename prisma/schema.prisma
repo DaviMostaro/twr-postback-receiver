@@ -5,7 +5,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -14,8 +14,8 @@ datasource db {
 
 enum Status {
   PENDING
-  COMPLETED
-  CANCELED
+  APPROVED
+  CANCELLED
 }
 
 enum Currency {
@@ -37,7 +37,7 @@ model Sale {
 
 model WebHookEvent {
   id         Int      @id @default(autoincrement())
-  eventId    Int      @unique
+  eventId    String      @unique
   saleId     String
   status     Status
   occurredAt DateTime
