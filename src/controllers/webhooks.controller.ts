@@ -12,27 +12,19 @@ export async function postWebhookSales(req: Request, res: Response) {
         });
     }
 
-    try {
-        const result = await saleWebhookService(schemaResult.data)
+    const result = await saleWebhookService(schemaResult.data);
 
-        if(result.result === "duplicate") {
-            return res.status(200).json({
-                message: "Event already processed",
-                eventId: schemaResult.data.eventId,
-                duplicate: true,
-            })
-        }
-
-        return res.status(201).json({
-            message: "Webhook processed successfully",
+    if (result.result === "duplicate") {
+        return res.status(200).json({
+            message: "Evento já processado.",
             eventId: schemaResult.data.eventId,
-            saleId: schemaResult.data.saleId,
-        });
-    } catch (error) {
-        console.error("Error processing sales webhook:", error);
-
-        return res.status(500).json({
-            error: "Internal server error",
+            duplicate: true,
         });
     }
+
+    return res.status(201).json({
+        message: "Webhook processado com sucesso.",
+        eventId: schemaResult.data.eventId,
+        saleId: schemaResult.data.saleId,
+    });
 }
