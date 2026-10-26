@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { webhooksRoutes } from "./webhooks.routes.js";
 import { salesRoutes } from "./sales.routes.js";
+import { salesSummaryRoutes } from "./salesSummary.routes.js";
 
 export const mainRoutes = Router();
 
@@ -9,4 +10,5 @@ mainRoutes.get("/ping", (req, res) => {
 });
 
 mainRoutes.use("/webhooks", webhooksRoutes);
+mainRoutes.use("/sales/summary", salesSummaryRoutes);
 mainRoutes.use("/sales", salesRoutes);
