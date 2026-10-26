@@ -3,10 +3,18 @@ import cors from "cors";
 import { prisma } from "./lib/prisma.js";
 import { mainRoutes } from "./routes/main.routes.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
+import type { Request } from "express";
 
 const app = express();
 
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      (req as Request).rawBody = Buffer.from(buf);
+    },
+  }),
+);
+
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use("/", mainRoutes);
