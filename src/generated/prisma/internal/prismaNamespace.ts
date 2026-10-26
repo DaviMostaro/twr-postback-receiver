@@ -611,7 +611,8 @@ export const SaleScalarFieldEnum = {
   amount: 'amount',
   currency: 'currency',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  lastEventAt: 'lastEventAt'
 } as const
 
 export type SaleScalarFieldEnum = (typeof SaleScalarFieldEnum)[keyof typeof SaleScalarFieldEnum]

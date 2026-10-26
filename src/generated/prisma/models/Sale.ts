@@ -41,6 +41,7 @@ export type SaleMinAggregateOutputType = {
   currency: $Enums.Currency | null
   createdAt: Date | null
   updatedAt: Date | null
+  lastEventAt: Date | null
 }
 
 export type SaleMaxAggregateOutputType = {
@@ -50,6 +51,7 @@ export type SaleMaxAggregateOutputType = {
   currency: $Enums.Currency | null
   createdAt: Date | null
   updatedAt: Date | null
+  lastEventAt: Date | null
 }
 
 export type SaleCountAggregateOutputType = {
@@ -59,6 +61,7 @@ export type SaleCountAggregateOutputType = {
   currency: number
   createdAt: number
   updatedAt: number
+  lastEventAt: number
   _all: number
 }
 
@@ -78,6 +81,7 @@ export type SaleMinAggregateInputType = {
   currency?: true
   createdAt?: true
   updatedAt?: true
+  lastEventAt?: true
 }
 
 export type SaleMaxAggregateInputType = {
@@ -87,6 +91,7 @@ export type SaleMaxAggregateInputType = {
   currency?: true
   createdAt?: true
   updatedAt?: true
+  lastEventAt?: true
 }
 
 export type SaleCountAggregateInputType = {
@@ -96,6 +101,7 @@ export type SaleCountAggregateInputType = {
   currency?: true
   createdAt?: true
   updatedAt?: true
+  lastEventAt?: true
   _all?: true
 }
 
@@ -192,6 +198,7 @@ export type SaleGroupByOutputType = {
   currency: $Enums.Currency
   createdAt: Date
   updatedAt: Date
+  lastEventAt: Date
   _count: SaleCountAggregateOutputType | null
   _avg: SaleAvgAggregateOutputType | null
   _sum: SaleSumAggregateOutputType | null
@@ -224,6 +231,7 @@ export type SaleWhereInput = {
   currency?: Prisma.EnumCurrencyFilter<"Sale"> | $Enums.Currency
   createdAt?: Prisma.DateTimeFilter<"Sale"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Sale"> | Date | string
+  lastEventAt?: Prisma.DateTimeFilter<"Sale"> | Date | string
   events?: Prisma.WebHookEventListRelationFilter
 }
 
@@ -234,6 +242,7 @@ export type SaleOrderByWithRelationInput = {
   currency?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  lastEventAt?: Prisma.SortOrder
   events?: Prisma.WebHookEventOrderByRelationAggregateInput
 }
 
@@ -247,6 +256,7 @@ export type SaleWhereUniqueInput = Prisma.AtLeast<{
   currency?: Prisma.EnumCurrencyFilter<"Sale"> | $Enums.Currency
   createdAt?: Prisma.DateTimeFilter<"Sale"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Sale"> | Date | string
+  lastEventAt?: Prisma.DateTimeFilter<"Sale"> | Date | string
   events?: Prisma.WebHookEventListRelationFilter
 }, "saleId">
 
@@ -257,6 +267,7 @@ export type SaleOrderByWithAggregationInput = {
   currency?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  lastEventAt?: Prisma.SortOrder
   _count?: Prisma.SaleCountOrderByAggregateInput
   _avg?: Prisma.SaleAvgOrderByAggregateInput
   _max?: Prisma.SaleMaxOrderByAggregateInput
@@ -274,6 +285,7 @@ export type SaleScalarWhereWithAggregatesInput = {
   currency?: Prisma.EnumCurrencyWithAggregatesFilter<"Sale"> | $Enums.Currency
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Sale"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Sale"> | Date | string
+  lastEventAt?: Prisma.DateTimeWithAggregatesFilter<"Sale"> | Date | string
 }
 
 export type SaleCreateInput = {
@@ -283,6 +295,7 @@ export type SaleCreateInput = {
   currency: $Enums.Currency
   createdAt: Date | string
   updatedAt?: Date | string
+  lastEventAt: Date | string
   events?: Prisma.WebHookEventCreateNestedManyWithoutSaleInput
 }
 
@@ -293,6 +306,7 @@ export type SaleUncheckedCreateInput = {
   currency: $Enums.Currency
   createdAt: Date | string
   updatedAt?: Date | string
+  lastEventAt: Date | string
   events?: Prisma.WebHookEventUncheckedCreateNestedManyWithoutSaleInput
 }
 
@@ -303,6 +317,7 @@ export type SaleUpdateInput = {
   currency?: Prisma.EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lastEventAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.WebHookEventUpdateManyWithoutSaleNestedInput
 }
 
@@ -313,6 +328,7 @@ export type SaleUncheckedUpdateInput = {
   currency?: Prisma.EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lastEventAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.WebHookEventUncheckedUpdateManyWithoutSaleNestedInput
 }
 
@@ -323,6 +339,7 @@ export type SaleCreateManyInput = {
   currency: $Enums.Currency
   createdAt: Date | string
   updatedAt?: Date | string
+  lastEventAt: Date | string
 }
 
 export type SaleUpdateManyMutationInput = {
@@ -332,6 +349,7 @@ export type SaleUpdateManyMutationInput = {
   currency?: Prisma.EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lastEventAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type SaleUncheckedUpdateManyInput = {
@@ -341,6 +359,7 @@ export type SaleUncheckedUpdateManyInput = {
   currency?: Prisma.EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lastEventAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type SaleCountOrderByAggregateInput = {
@@ -350,6 +369,7 @@ export type SaleCountOrderByAggregateInput = {
   currency?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  lastEventAt?: Prisma.SortOrder
 }
 
 export type SaleAvgOrderByAggregateInput = {
@@ -363,6 +383,7 @@ export type SaleMaxOrderByAggregateInput = {
   currency?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  lastEventAt?: Prisma.SortOrder
 }
 
 export type SaleMinOrderByAggregateInput = {
@@ -372,6 +393,7 @@ export type SaleMinOrderByAggregateInput = {
   currency?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  lastEventAt?: Prisma.SortOrder
 }
 
 export type SaleSumOrderByAggregateInput = {
@@ -428,6 +450,7 @@ export type SaleCreateWithoutEventsInput = {
   currency: $Enums.Currency
   createdAt: Date | string
   updatedAt?: Date | string
+  lastEventAt: Date | string
 }
 
 export type SaleUncheckedCreateWithoutEventsInput = {
@@ -437,6 +460,7 @@ export type SaleUncheckedCreateWithoutEventsInput = {
   currency: $Enums.Currency
   createdAt: Date | string
   updatedAt?: Date | string
+  lastEventAt: Date | string
 }
 
 export type SaleCreateOrConnectWithoutEventsInput = {
@@ -462,6 +486,7 @@ export type SaleUpdateWithoutEventsInput = {
   currency?: Prisma.EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lastEventAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type SaleUncheckedUpdateWithoutEventsInput = {
@@ -471,6 +496,7 @@ export type SaleUncheckedUpdateWithoutEventsInput = {
   currency?: Prisma.EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lastEventAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -511,6 +537,7 @@ export type SaleSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   currency?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  lastEventAt?: boolean
   events?: boolean | Prisma.Sale$eventsArgs<ExtArgs>
   _count?: boolean | Prisma.SaleCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["sale"]>
@@ -522,6 +549,7 @@ export type SaleSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   currency?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  lastEventAt?: boolean
 }, ExtArgs["result"]["sale"]>
 
 export type SaleSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -531,6 +559,7 @@ export type SaleSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   currency?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  lastEventAt?: boolean
 }, ExtArgs["result"]["sale"]>
 
 export type SaleSelectScalar = {
@@ -540,9 +569,10 @@ export type SaleSelectScalar = {
   currency?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  lastEventAt?: boolean
 }
 
-export type SaleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"saleId" | "status" | "amount" | "currency" | "createdAt" | "updatedAt", ExtArgs["result"]["sale"]>
+export type SaleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"saleId" | "status" | "amount" | "currency" | "createdAt" | "updatedAt" | "lastEventAt", ExtArgs["result"]["sale"]>
 export type SaleInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   events?: boolean | Prisma.Sale$eventsArgs<ExtArgs>
   _count?: boolean | Prisma.SaleCountOutputTypeDefaultArgs<ExtArgs>
@@ -562,6 +592,7 @@ export type $SalePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     currency: $Enums.Currency
     createdAt: Date
     updatedAt: Date
+    lastEventAt: Date
   }, ExtArgs["result"]["sale"]>
   composites: {}
 }
@@ -992,6 +1023,7 @@ export interface SaleFieldRefs {
   readonly currency: Prisma.FieldRef<"Sale", 'Currency'>
   readonly createdAt: Prisma.FieldRef<"Sale", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Sale", 'DateTime'>
+  readonly lastEventAt: Prisma.FieldRef<"Sale", 'DateTime'>
 }
     
 

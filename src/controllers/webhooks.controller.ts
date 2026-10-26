@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 import { saleWebhookSchema } from "../schemas/saleWebhook.schema.js";
-import { saleWebhookService } from "../services/webhooks.service.js";
+import { postWebhookSalesService } from "../services/webhooks.service.js";
 
-export async function postWebhookSales(req: Request, res: Response) {
+export async function postWebhookSalesController(req: Request, res: Response) {
     const schemaResult = saleWebhookSchema.safeParse(req.body);
 
     if (!schemaResult.success) {
@@ -12,7 +12,7 @@ export async function postWebhookSales(req: Request, res: Response) {
         });
     }
 
-    const result = await saleWebhookService(schemaResult.data);
+    const result = await postWebhookSalesService(schemaResult.data);
 
     if (result.result === "duplicate") {
         return res.status(200).json({

@@ -25,19 +25,20 @@ enum Currency {
 }
 
 model Sale {
-  saleId    String   @id
-  status    Status   @default(PENDING)
-  amount    Decimal  @db.Decimal(12, 2)
-  currency  Currency
-  createdAt DateTime
-  updatedAt DateTime @updatedAt
+  saleId      String   @id
+  status      Status   @default(PENDING)
+  amount      Decimal  @db.Decimal(12, 2)
+  currency    Currency
+  createdAt   DateTime
+  updatedAt   DateTime @updatedAt
+  lastEventAt DateTime
 
   events WebHookEvent[]
 }
 
 model WebHookEvent {
   id         Int      @id @default(autoincrement())
-  eventId    String      @unique
+  eventId    String   @unique
   saleId     String
   status     Status
   occurredAt DateTime
