@@ -1,250 +1,234 @@
 # TWR Postback Receiver
 
-API REST desenvolvida em Node.js e TypeScript para receber, validar e processar notificações de vendas via webhooks. 
+API REST desenvolvida em Node.js e TypeScript para receber, validar e processar notificações de vendas por webhooks, mantendo o estado das vendas e um histórico dos eventos recebidos.
 
-## Funcionalidades
+## 1. Como chamar a API
 
-- Recebimento de notificações de vendas por meio de webhooks HTTP.
-- Autenticação de webhooks utilizando HMAC SHA-256.
-- Validação dos dados recebidos com Zod.
-- Persistência de vendas e eventos em PostgreSQL.
-- Prevenção do processamento duplicado de eventos.
-- Tratamento de eventos recebidos fora de ordem cronológica.
-- Controle das transições de status das vendas.
-- Consulta de vendas com paginação.
-- Relatório agregado de vendas por status e moeda.
-- Testes automatizados com Vitest e Supertest.
+**URL base:** https://twr-postback-receiver-8ikx.onrender.com
 
-## Tecnologias
+### Consultar vendas (`GET`)
 
-- Node.js
-- TypeScript
+Para listar as vendas com paginação, envie uma requisição `GET` para:
+
+```http
+https://twr-postback-receiver-8ikx.onrender.com/sales?page=1&limit=10
+```
+
+No Postman:
+1. Selecione o método `GET`.
+2. Insira a URL acima.
+3. Clique em **Send**.
+
+Os parâmetros `page` e `limit` são opcionais. Os valores padrão são `page=1` e `limit=10`, com limite máximo de 100 vendas por página.
+
+Para consultar o resumo agregado, utilize:
+
+```http
+https://twr-postback-receiver-8ikx.onrender.com/sales/summary
+```
+
+Esse endpoint retorna a quantidade total de vendas, a quantidade por status e a soma dos valores das vendas aprovadas agrupada por moeda. Os valores de moedas diferentes não são convertidos nem somados entre si.
+
+### Enviar um postback (`POST`)
+
+O endpoint de recebimento de vendas exige uma assinatura HMAC-SHA256 no header `x-webhook-signature`. Para facilitar os testes, o Postman pode gerar essa assinatura automaticamente antes de cada requisição.
+
+**URL:**
+
+```http
+https://twr-postback-receiver-8ikx.onrender.com/webhooks/sales
+```
+
+#### Passo 1 — Configurar o segredo
+
+O segredo compartilhado usado para validar as assinaturas é configurado no servidor pela variável `WEBHOOK_SECRET`. O segredo será compartilhado de modo privado, sem que ele seja publicado no repositório.
+
+No Postman, recomenda-se criar uma variável de ambiente chamada `webhook_secret`:
+
+1. Abra **Environments** e crie ou selecione um ambiente.
+2. Adicione uma variável com o nome `webhook_secret`.
+3. Informe o segredo fornecido para a avaliação como valor da variável.
+4. Selecione esse ambiente antes de executar a requisição.
+
+O valor precisa corresponder exatamente ao `WEBHOOK_SECRET` configurado no servidor.
+
+Embora seja possível inserir o segredo diretamente no script do Postman, utilizar uma variável de ambiente é recomendado para separar as credenciais do código e reduzir o risco de compartilhamento acidental.
+
+#### Passo 2 — Configurar o corpo da requisição
+
+Crie uma requisição `POST` para a URL indicada acima.
+
+Na aba **Headers**, adicione:
+
+| Key | Value |
+|---|---|
+| `Content-Type` | `application/json` |
+
+O header `x-webhook-signature` será preenchido automaticamente pelo script do próximo passo.
+
+Na aba **Body**:
+
+1. Selecione **raw**.
+2. Escolha o formato **JSON**.
+3. Insira o exemplo abaixo:
+
+```json
+{
+  "eventId": "eval-event-001",
+  "saleId": "eval-sale-001",
+  "status": "PENDING",
+  "amount": 149.90,
+  "currency": "BRL",
+  "createdAt": "2026-10-27T12:00:00.000Z",
+  "occurredAt": "2026-10-27T12:00:00.000Z"
+}
+```
+
+#### Passo 3 — Configurar o script de assinatura
+
+Na aba **Scripts → Pre-request**, adicione o código abaixo:
+
+```javascript
+const secret = pm.environment.get("webhook_secret");
+
+if (!secret) {
+  throw new Error(
+    "Configure a variável de ambiente webhook_secret antes de enviar a requisição."
+  );
+}
+
+const body = pm.request.body.raw;
+
+if (typeof body !== "string") {
+  throw new Error("O corpo da requisição deve estar no formato raw.");
+}
+
+const signature = CryptoJS.HmacSHA256(body, secret)
+  .toString(CryptoJS.enc.Hex);
+
+pm.request.headers.upsert({
+  key: "x-webhook-signature",
+  value: signature
+});
+```
+
+O script utiliza o corpo bruto da requisição para gerar a assinatura HMAC-SHA256 em hexadecimal e preencher o header `x-webhook-signature` automaticamente.
+
+**Alternativa:** para um teste rápido, o segredo pode ser colocado diretamente no script, substituindo:
+
+```javascript
+const secret = pm.environment.get("webhook_secret");
+```
+
+por:
+
+```javascript
+const secret = "SEGREDO_RECEBIDO_PRIVADAMENTE";
+```
+
+Nesse caso, não compartilhe nem publique o script com o segredo preenchido. A variável de ambiente continua sendo a opção recomendada.
+
+#### Passo 4 — Enviar e conferir a resposta
+
+Clique em **Send**.
+
+As principais respostas esperadas são:
+
+- `201 Created`: novo evento processado.
+- `200 OK`: evento já recebido anteriormente.
+- `400 Bad Request`: corpo inválido.
+- `401 Unauthorized`: assinatura ausente ou inválida.
+
+Para testar a idempotência, envie novamente o mesmo corpo sem alterar o `eventId`. A API deve reconhecer o evento duplicado sem processá-lo novamente.
+
+Para testar uma atualização de status, mantenha o mesmo `saleId`, utilize um `eventId` novo e informe um `occurredAt` posterior.
+
+Os endpoints de monitoramento são:
+
+- `GET /health`: verifica se a aplicação está disponível.
+- `GET /health/db`: verifica a conexão com o banco de dados.
+
+## 2. Premissas e decisões
+
+### Formato do evento
+
+Foi adotado um formato de evento único, independente do provedor de checkout, com `eventId`, `saleId`, `status`, `amount`, `currency`, `createdAt` e `occurredAt`. Os status aceitos são `PENDING`, `APPROVED` e `CANCELLED`; as moedas aceitas são `BRL`, `USD` e `EUR`. O valor deve ser positivo e as datas devem estar em formato ISO 8601.
+
+**Decisão:** manter um contrato pequeno e explícito facilita validar os dados e comparar eventos. Não foram implementados adaptadores para formatos específicos de diferentes plataformas de checkout; cada integração precisaria mapear seu payload para esse contrato.
+
+### Autenticidade dos postbacks
+
+O endpoint de entrada exige uma assinatura HMAC-SHA256 hexadecimal no header `x-webhook-signature`, calculada sobre o corpo bruto da requisição com um segredo compartilhado.
+
+**Decisão:** validar a assinatura permite rejeitar requisições sem o segredo correto e evita enviar o segredo diretamente na requisição. O segredo é configuração de ambiente, não parte do código nem do payload. Os endpoints `GET` não exigem autenticação nesta versão, pois o escopo do desafio prioriza o recebimento e a consulta dos dados. Em um produto com dados sensíveis, seria necessário avaliar controles de acesso também para as consultas.
+
+### Idempotência e histórico
+
+Cada evento tem um `eventId` único. Se o mesmo evento for reenviado, ele não é processado novamente. Os eventos recebidos ficam registrados em `WebHookEvent`, separadamente dos dados consolidados de `Sale`.
+
+**Decisão:** a separação evita criar vendas duplicadas durante retentativas do checkout e preserva o histórico das notificações, enquanto `Sale` representa o estado consolidado de cada venda.
+
+### Ordenação e transições de status
+
+O campo `occurredAt` é usado para determinar a ordem cronológica dos eventos. Eventos mais antigos são mantidos no histórico, mas não sobrescrevem o estado atual da venda. As transições de status previstas são `PENDING → APPROVED`, `PENDING → CANCELLED` e `APPROVED → CANCELLED`. Um evento que repete o status atual também é aceito.
+
+**Decisão:** webhooks podem chegar atrasados ou fora de ordem; comparar as datas evita que um evento antigo reverta um estado mais recente. A política de transições impede, por exemplo, que uma venda cancelada volte a ser aprovada.
+
+### Consistência em operações concorrentes
+
+O processamento de eventos usa transações do Prisma com isolamento `Serializable` e tentativas adicionais para erros específicos de concorrência e unicidade.
+
+**Decisão:** isso reduz o risco de inconsistências quando eventos chegam simultaneamente ou quando o mesmo evento é enviado em mais de uma requisição concorrente.
+
+### Validação e relatórios
+
+O payload é validado antes do processamento. A listagem de vendas usa paginação, com limite máximo de 100 registros por página. O resumo agrupa as vendas por status e soma apenas os valores aprovados, agrupados por moeda.
+
+**Decisão:** validar na entrada reduz a chance de persistir dados inválidos; a paginação limita o tamanho das respostas; e separar os totais por moeda evita somar valores de moedas diferentes sem conversão cambial.
+
+### O que ficou fora do escopo
+
+Para manter o foco no receptor de postbacks e nos relatórios, esta versão não inclui:
+
+- login, cadastro de usuários, papéis ou controle de acesso para usuários;
+- painel administrativo ou interface web;
+- conectores específicos para provedores de checkout.
+
+Esses itens podem ser considerados em uma evolução do projeto, conforme os requisitos de negócio e de operação.
+
+## 3. Funcionalidades
+
+- Recebimento de postbacks por `POST /webhooks/sales`.
+- Validação de assinatura HMAC-SHA256.
+- Validação do payload.
+- Persistência de vendas e histórico de eventos em PostgreSQL.
+- Idempotência por `eventId`.
+- Tratamento de eventos fora de ordem e controle de transições de status.
+- Consulta de vendas com paginação em `GET /sales`.
+- Relatório agregado em `GET /sales/summary`.
+- Monitoramento em `GET /health` e `GET /health/db`.
+- Testes automatizados.
+
+## 4. Tecnologias
+
+- Node.js e TypeScript
 - Express 5
 - PostgreSQL
 - Prisma ORM
 - Zod
-- Vitest
-- Supertest
+- Vitest e Supertest
+- Render para hospedagem da API
+- Supabase para o banco de dados PostgreSQL
 
-## Arquitetura
+## 5. Arquitetura
 
-A aplicação utiliza uma arquitetura em camadas para separar responsabilidades:
+A aplicação utiliza uma arquitetura em camadas para manter as responsabilidades separadas:
 
-- **Routes:** definem os endpoints da API.
-- **Controllers:** validam as requisições e coordenam as respostas HTTP.
-- **Services:** implementam as regras de negócio.
-- **Schemas:** definem os formatos e as validações dos dados.
-- **Middlewares:** tratam autenticação e erros.
-- **Prisma:** gerencia o acesso ao banco de dados.
+- **Routes:** definem os endpoints disponíveis.
+- **Controllers:** coordenam as requisições e as respostas HTTP.
+- **Services:** implementam o processamento dos eventos e as regras de negócio.
+- **Schemas:** validam os dados recebidos.
+- **Middlewares:** tratam autenticação dos webhooks e erros.
+- **Prisma:** gerencia o acesso ao PostgreSQL.
 
-## Endpoints
-
-### Monitoramento
-
-| Método | Endpoint | Descrição |
-|---|---|---|
-| GET | `/ping` | Verificação simples da API |
-| GET | `/health` | Verifica se a aplicação está respondendo |
-| GET | `/health/db` | Verifica a conexão com o banco de dados |
-
-### Webhooks
-
-| Método | Endpoint | Descrição |
-|---|---|---|
-| POST | `/webhooks/sales` | Recebe e processa eventos de vendas |
-
-O endpoint exige uma assinatura HMAC SHA-256 hexadecimal no cabeçalho `x-webhook-signature`.
-
-Exemplo de payload:
-
-```json
-{
-  "eventId": "evt_001",
-  "saleId": "sale_001",
-  "status": "PENDING",
-  "amount": 149.90,
-  "currency": "BRL",
-  "createdAt": "2026-10-26T10:00:00.000Z",
-  "occurredAt": "2026-10-26T10:00:00.000Z"
-}
-```
-
-Campos aceitos:
-
-- `eventId`: identificador único do evento.
-- `saleId`: identificador da venda.
-- `status`: `PENDING`, `APPROVED` ou `CANCELLED`.
-- `amount`: valor numérico positivo.
-- `currency`: `BRL`, `USD` ou `EUR`.
-- `createdAt`: data de criação da venda em formato ISO 8601.
-- `occurredAt`: data em que o evento ocorreu, em formato ISO 8601.
-
-Respostas principais:
-
-- `201 Created`: evento processado.
-- `200 OK`: evento já processado anteriormente.
-- `400 Bad Request`: payload inválido.
-- `401 Unauthorized`: assinatura ausente ou inválida.
-- `500 Internal Server Error`: segredo de autenticação não configurado.
-
-### Consulta de vendas
-
-| Método | Endpoint | Descrição |
-|---|---|---|
-| GET | `/sales` | Lista vendas com paginação |
-| GET | `/sales/summary` | Retorna um resumo agregado das vendas |
-
-A listagem aceita os parâmetros `page` e `limit`.
-
-Exemplo:
-
-```http
-GET /sales?page=1&limit=10
-```
-
-Os parâmetros são opcionais. Os valores padrão são `page=1` e `limit=10`, e o limite máximo de resultados por página é 100.
-
-O endpoint `/sales/summary` retorna:
-
-- Total de vendas.
-- Quantidade de vendas por status.
-- Soma dos valores das vendas aprovadas, agrupada por moeda.
-
-## Regras de negócio
-
-### Idempotência
-
-Cada evento possui um identificador único (`eventId`). Se o mesmo evento for recebido novamente, ele não será registrado ou processado novamente.
-
-### Eventos fora de ordem
-
-A aplicação utiliza o campo `occurredAt` para determinar a ordem cronológica dos eventos.
-
-Eventos mais antigos são registrados no histórico, mas não alteram o estado atual da venda.
-
-### Transições de status
-
-As transições permitidas são:
-
-- `PENDING` → `APPROVED`
-- `PENDING` → `CANCELLED`
-- `APPROVED` → `CANCELLED`
-
-Um evento que repete o status atual também é aceito. A mudança de estado só acontece quando o evento é mais recente que o último evento considerado para a venda.
-
-### Histórico de eventos
-
-Os eventos recebidos são armazenados separadamente das vendas, permitindo manter o histórico de notificações processadas.
-
-### Concorrência
-
-O processamento utiliza transações do Prisma com isolamento `Serializable` e tentativas adicionais para determinados erros de concorrência e violações de unicidade.
-
-## Modelo de dados
-
-A aplicação utiliza dois modelos principais:
-
-**Sale**
-
-Armazena os dados consolidados da venda, incluindo identificador, status, valor, moeda e datas.
-
-**WebHookEvent**
-
-Armazena o histórico de eventos recebidos, incluindo identificador único, venda associada, status, data de ocorrência, data de recebimento e payload original.
-
-A relação entre os modelos permite consultar os eventos associados a cada venda.
-
-## Pré-requisitos
-
-- Node.js
-- npm
-- PostgreSQL
-- Git
-
-## Configuração local
-
-### 1. Clonar o repositório
-
-```bash
-git clone <URL_DO_REPOSITORIO>
-cd twr-postback-receiver
-```
-
-### 2. Instalar as dependências
-
-```bash
-npm install
-```
-
-### 3. Configurar as variáveis de ambiente
-
-Crie um arquivo `.env` na raiz do projeto:
-
-```env
-PORT=3001
-DATABASE_URL="postgresql://usuario:senha@localhost:5432/nome_do_banco?schema=public"
-WEBHOOK_SECRET="substitua-por-um-segredo-forte"
-```
-
-Configure a URL de conexão de acordo com seu banco PostgreSQL.
-
-O `WEBHOOK_SECRET` deve ser o mesmo segredo compartilhado com o sistema responsável por enviar os webhooks.
-
-**Não compartilhe nem envie arquivos `.env` para o repositório.**
-
-### 4. Gerar o cliente Prisma
-
-```bash
-npx prisma generate
-```
-
-### 5. Aplicar as migrações
-
-Para um ambiente de desenvolvimento:
-
-```bash
-npx prisma migrate dev
-```
-
-Para aplicar migrações existentes em um ambiente de produção:
-
-```bash
-npx prisma migrate deploy
-```
-
-Utilize a URL do banco de dados correspondente ao ambiente desejado.
-
-### 6. Iniciar a aplicação
-
-Em desenvolvimento:
-
-```bash
-npm run dev
-```
-
-Para compilar e iniciar a aplicação:
-
-```bash
-npm run build
-npm start
-```
-
-Por padrão, a aplicação utiliza a porta `3001`.
-
-## Testes automatizados
-
-Os testes utilizam Vitest e Supertest.
-
-Para executá-los:
-
-```bash
-npm test
-```
-
-É necessário configurar previamente o arquivo `.env.test` e criar o banco de dados de testes `twr-postback-receiver-test`, aplicando suas migrações.
-
-**Atenção:** os testes apagam os registros das tabelas de vendas e eventos antes de cada caso. A suíte contém uma verificação para impedir essa limpeza caso a URL não aponte para o banco de testes esperado.
-
-Nunca configure os testes para utilizar um banco com dados importantes.
-
-
+O modelo `Sale` armazena o estado consolidado da venda. O modelo `WebHookEvent` armazena os eventos recebidos e seus dados, relacionados à venda correspondente.
